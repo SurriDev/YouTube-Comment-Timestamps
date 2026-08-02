@@ -5,6 +5,11 @@
   const TOAST_LEAD_BASE_SECONDS = 3;
   const TOAST_LEAD_MAX_EXTRA_SECONDS = 7; // caps lead time at 10s for very long comments
   const TOAST_LEAD_CHARS_PER_EXTRA_SECOND = 20; // +1s of lead per 20 characters of comment text
+  // Roughly what the clamped (non-hovered) toast comment actually shows —
+  // matches the CSS line-clamp in style.css. The reading-time bonus below is
+  // budgeted against this, not the full comment, since text past this point
+  // is hidden until you hover anyway.
+  const TOAST_VISIBLE_CHAR_BUDGET = 140;
 
   const DEFAULT_SETTINGS = {
     markers: true,
@@ -132,7 +137,11 @@
       hit.count++;
       if (hit.samples.length < 3) {
         const text = body.textContent.trim().replace(/\s+/g, ' ');
-        if (text) hit.samples.push(text.slice(0, 90));
+        // Only a sanity cap against pathological essay-length comments —
+        // the toast/tooltip themselves clamp what's shown by default and
+        // expand to the rest on hover, so this isn't the thing truncating
+        // display text anymore.
+        if (text) hit.samples.push(text.slice(0, 600));
       }
       added++;
     }
@@ -296,9 +305,10 @@
   // the toast so far back it appears with no obvious reason.
   function leadSecondsFor(hit) {
     const text = hit.samples[0] || '';
+    const visibleLength = Math.min(text.length, TOAST_VISIBLE_CHAR_BUDGET);
     const extra = Math.min(
       TOAST_LEAD_MAX_EXTRA_SECONDS,
-      Math.floor(text.length / TOAST_LEAD_CHARS_PER_EXTRA_SECOND)
+      Math.floor(visibleLength / TOAST_LEAD_CHARS_PER_EXTRA_SECOND)
     );
     return TOAST_LEAD_BASE_SECONDS + extra;
   }

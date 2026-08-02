@@ -163,6 +163,19 @@
 .ytc-toast-comment {
   color: #e8e8e8;
   overflow-wrap: anywhere;
+  /* Clamped by default so a long comment can't blow up the toast's size —
+     hovering (below) lifts the clamp to show it in full. The reading-time
+     bonus in content.js is budgeted against roughly this much text, not the
+     full comment, since anything past it is hidden until you hover anyway. */
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+
+.ytc-toast:hover .ytc-toast-comment {
+  -webkit-line-clamp: unset;
+  overflow: visible;
 }
 
 .ytc-toast-progress {

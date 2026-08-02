@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "YouTube Comment Timestamp Chapters",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Finds timestamps mentioned in YouTube comments and marks them on the video progress bar, like chapter markers.",
   "permissions": ["storage"],
   "icons": {
