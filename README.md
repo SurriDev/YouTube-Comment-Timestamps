@@ -7,6 +7,10 @@ chapters, but crowdsourced from the comments section.
 Not published on the Chrome Web Store — load it manually, it takes under a
 minute.
 
+![Coming up toast](screenshots/toast.png)
+
+![Hover tooltip on the scrubber](screenshots/tooltip.png)
+
 ## Features
 
 - **Progress bar markers** — every timestamp mentioned in the comments gets
