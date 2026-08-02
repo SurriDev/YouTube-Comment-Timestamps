@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Comment Timestamp Chapters",
+  "version": "1.0.0",
+  "description": "Finds timestamps mentioned in YouTube comments and marks them on the video progress bar, like chapter markers.",
+  "permissions": ["storage"],
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Timestamp Chapters settings",
+    "default_icon": {
+      "16": "icon16.png",
+      "48": "icon48.png",
+      "128": "icon128.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://www.youtube.com/*"],
+      "js": ["content.js"],
+      "css": ["style.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}

@@ -1,0 +1,41 @@
+=== Extension name ===
+YouTube Comment Timestamp Chapters
+
+=== Short description (max 132 characters) ===
+Marks timestamps mentioned in YouTube comments right on the video progress bar, like chapters.
+
+=== Category ===
+Productivity  (Video/Movies also fits if offered)
+
+=== Detailed description ===
+Ever seen a YouTube comment like "4:48 — I love you too 😭✌️" and wished you
+could jump straight there without scrubbing through the whole video? This
+extension finds those timestamps automatically and turns them into visual
+markers on the video's own progress bar — like chapters, but crowdsourced
+from the comments section.
+
+FEATURES
+
+• Progress bar markers — every timestamp mentioned in the comments gets a
+  tick mark on the scrubber. Mentioned by multiple commenters? It turns gold.
+• Hover tooltip — hover a marker to see the timestamp and a preview of the
+  comment that mentioned it.
+• "Coming up" toast — a heads-up a few seconds before playback reaches a
+  marker, so you don't miss the moment. The lead time grows automatically
+  for longer comments so you have time to read them. Hover it to pause and
+  read at your own pace; click the X to dismiss it.
+• Optional chime — plays when a marker is coming up, with its own volume
+  slider (0–150%) and support for uploading your own short sound clip.
+• Fully customizable — every feature above can be toggled off independently,
+  and the toast's on-screen position (6 placements) is configurable.
+
+PRIVACY
+
+This extension reads the YouTube page you're already viewing to find
+timestamp links in the comments — it doesn't collect, transmit, or sell any
+data. All settings (including any custom sound clip you upload) are stored
+locally in your own browser via chrome.storage.local and never leave your
+machine. See the privacy policy for details.
+
+=== Suggested tags/keywords ===
+youtube, comments, timestamps, chapters, video, progress bar, markers

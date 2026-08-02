@@ -1,0 +1,186 @@
+/* Markers are purely visual: pointer-events stay off so they can never
+   interfere with dragging YouTube's scrubber. Hover is handled by a
+   mousemove listener on the progress bar instead. */
+.ytc-timestamp-marker {
+  position: absolute;
+  top: 0;
+  width: 3px;
+  height: 100%;
+  background-color: rgba(255, 255, 255, 0.9);
+  transform: translateX(-50%);
+  pointer-events: none;
+  z-index: 40;
+}
+
+.ytc-timestamp-marker-hot {
+  background-color: #ffd400;
+}
+
+.ytc-timestamp-marker-active {
+  transform: translateX(-50%) scaleX(2.2);
+  background-color: #ffffff;
+}
+
+.ytc-tooltip {
+  position: absolute;
+  z-index: 9999;
+  max-width: 320px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: rgba(28, 28, 28, 0.96);
+  color: #fff;
+  font-family: "Roboto", "Arial", sans-serif;
+  font-size: 12px;
+  line-height: 1.35;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.1s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  white-space: normal;
+}
+
+.ytc-tooltip[data-visible="true"] {
+  opacity: 1;
+}
+
+.ytc-tooltip-time {
+  color: #ffd400;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.ytc-tooltip-comment {
+  display: block;
+  margin-top: 3px;
+  color: #e8e8e8;
+  overflow-wrap: anywhere;
+}
+
+/* Position classes set --ytc-tx/--ytc-ty (resting-state offset used only
+   while hidden, for the slide-in) plus the actual top/left/right/bottom
+   placement. .ytc-toast-visible then zeroes --ytc-ty for the "settled"
+   position — same transform property, just a different variable value, so
+   there's no conflicting transform declaration to fight over. */
+.ytc-toast {
+  position: absolute;
+  --ytc-tx: 0;
+  --ytc-ty: -6px;
+  max-width: 280px;
+  padding: 10px 12px 13px;
+  border-radius: 8px;
+  overflow: hidden; /* keeps the bottom progress bar within the rounded corners */
+  background: rgba(24, 24, 24, 0.94);
+  color: #fff;
+  font-family: "Roboto", "Arial", sans-serif;
+  font-size: 12px;
+  line-height: 1.35;
+  pointer-events: none; /* re-enabled only while visible, see .ytc-toast-visible */
+  z-index: 9998;
+  opacity: 0;
+  transform: translate(var(--ytc-tx), var(--ytc-ty));
+  transition: opacity 0.2s ease, transform 0.35s ease;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.ytc-toast-pos-top-left {
+  top: 56px;
+  left: 16px;
+}
+.ytc-toast-pos-top-center {
+  top: 56px;
+  left: 50%;
+  --ytc-tx: -50%;
+}
+.ytc-toast-pos-top-right {
+  top: 56px;
+  right: 16px;
+}
+.ytc-toast-pos-bottom-left {
+  bottom: 70px;
+  left: 16px;
+  --ytc-ty: 6px;
+}
+.ytc-toast-pos-bottom-center {
+  bottom: 70px;
+  left: 50%;
+  --ytc-tx: -50%;
+  --ytc-ty: 6px;
+}
+.ytc-toast-pos-bottom-right {
+  bottom: 70px;
+  right: 16px;
+  --ytc-ty: 6px;
+}
+
+/* Declared after the position rules so it wins the --ytc-ty override
+   regardless of which position class is also applied (equal specificity,
+   cascade order decides). Opacity is dimmed by default so it's easy to keep
+   watching the video through it — hovering (which also pauses playback,
+   see the mouseenter handler) brings it to full strength for reading. */
+.ytc-toast-visible {
+  opacity: 0.88;
+  --ytc-ty: 0;
+  pointer-events: auto;
+}
+
+.ytc-toast-visible:hover {
+  opacity: 1;
+}
+
+.ytc-toast-close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  width: 18px;
+  height: 18px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  color: #fff;
+  font-size: 13px;
+  line-height: 18px;
+  text-align: center;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background 0.15s ease;
+}
+
+.ytc-toast:hover .ytc-toast-close {
+  opacity: 1;
+}
+
+.ytc-toast-close:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.ytc-toast-time {
+  color: #ffd400;
+  font-weight: 700;
+  margin-bottom: 3px;
+}
+
+.ytc-toast-comment {
+  color: #e8e8e8;
+  overflow-wrap: anywhere;
+}
+
+.ytc-toast-progress {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 3px;
+  background: rgba(255, 255, 255, 0.15);
+  overflow: hidden; /* clips the fill to the toast's own rounded bottom corners */
+  border-radius: 0 0 8px 8px;
+}
+
+.ytc-toast-progress-fill {
+  height: 100%;
+  width: 100%;
+  background: #ffd400;
+  /* No transition here: width is driven every timeupdate tick (several
+     times a second) from actual video time, so it's already smooth and a
+     transition would just add lag between ticks and pauses. */
+}

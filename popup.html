@@ -1,0 +1,91 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Timestamp Chapters</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <h1>Comment Timestamp Chapters</h1>
+
+    <label class="row">
+      <input type="checkbox" id="markers" />
+      <span>
+        <strong>Progress bar markers</strong>
+        <small>Show tick marks on the video scrubber for timestamps mentioned in comments</small>
+      </span>
+    </label>
+
+    <label class="row">
+      <input type="checkbox" id="tooltip" />
+      <span>
+        <strong>Hover tooltip</strong>
+        <small>Show the comment text when hovering a marker</small>
+      </span>
+    </label>
+
+    <label class="row">
+      <input type="checkbox" id="toast" />
+      <span>
+        <strong>"Coming up" toast</strong>
+        <small>Pop up a preview 3 seconds before playback reaches a marker</small>
+      </span>
+    </label>
+
+    <div class="row position-row">
+      <span>
+        <strong>Toast position</strong>
+        <small>Where the toast appears on the video</small>
+        <div class="position-frame" id="positionFrame">
+          <button type="button" class="pos-btn" data-pos="top-left" title="Top left"></button>
+          <button type="button" class="pos-btn" data-pos="top-center" title="Top center"></button>
+          <button type="button" class="pos-btn" data-pos="top-right" title="Top right"></button>
+          <button type="button" class="pos-btn" data-pos="bottom-left" title="Bottom left"></button>
+          <button type="button" class="pos-btn" data-pos="bottom-center" title="Bottom center"></button>
+          <button type="button" class="pos-btn" data-pos="bottom-right" title="Bottom right"></button>
+        </div>
+      </span>
+    </div>
+
+    <label class="row">
+      <input type="checkbox" id="sound" />
+      <span>
+        <strong>Sound effect</strong>
+        <small>Play a chime when a marker is coming up</small>
+      </span>
+    </label>
+
+    <div class="row volume-row">
+      <span>
+        <strong>Sound volume</strong>
+        <small>0% is muted, 100% is normal, up to 150% amplifies past normal</small>
+        <div class="volume-control">
+          <input type="range" id="volume" min="0" max="150" step="5" />
+          <span id="volumeLabel">100%</span>
+        </div>
+      </span>
+    </div>
+
+    <div class="row sound-file-row">
+      <span>
+        <strong>Custom sound</strong>
+        <small>Drag & drop, paste, or browse for a clip under 5 seconds. Otherwise the default chime plays.</small>
+
+        <div class="sound-drop" id="soundDrop" tabindex="0">
+          <span id="soundDropLabel">Default chime</span>
+        </div>
+
+        <div class="sound-actions">
+          <button type="button" id="browseSoundBtn">Browse…</button>
+          <button type="button" id="previewSoundBtn">▶ Preview</button>
+          <button type="button" id="resetSoundBtn">Reset to default</button>
+        </div>
+
+        <div class="sound-error" id="soundError"></div>
+        <input type="file" id="soundFileInput" accept="audio/*" hidden />
+      </span>
+    </div>
+
+    <script src="popup.js"></script>
+  </body>
+</html>
