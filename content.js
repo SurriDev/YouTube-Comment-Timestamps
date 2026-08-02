@@ -45,8 +45,9 @@
     customAudioBufferFor: null, // which dataUrl the buffer above belongs to
     toastedHits: new Set(), // hits sound has already fired for on this approach
     dismissedHits: new Set(), // hits the user closed with the X, for this approach
-    currentToastHit: null, // the hit the toast is currently showing, if any
-    toastHoverPausedVideo: false, // true only if hovering the toast paused it ourselves
+    activeToastHits: new Map(), // hit -> its toast card element, for every hit currently in its lead window
+    toastHoverCount: 0, // >0 while the pointer is over any toast card
+    toastHoverPausedVideo: false, // true only if hovering a toast paused it ourselves
   };
 
   const getVideoId = () => new URLSearchParams(location.search).get('v');
@@ -69,13 +70,13 @@
 
     if (!state.settings.tooltip) hideTooltip(getProgressBar());
 
-    if (!state.settings.toast && state.currentToastHit) {
-      state.currentToastHit = null;
-      hideApproachToast();
-    } else if (state.currentToastHit) {
-      // Position (or anything else) may have changed while a toast is on
-      // screen — move it immediately instead of waiting for the next hit.
-      positionToast();
+    if (!state.settings.toast) {
+      for (const hit of [...state.activeToastHits.keys()]) removeToastCard(hit);
+    } else {
+      // Position (or anything else) may have changed while toasts are on
+      // screen — move the whole stack immediately instead of waiting for
+      // the next one to trigger.
+      positionStack(document.querySelector('.ytc-toast-stack'));
     }
   }
 
@@ -313,80 +314,91 @@
     return TOAST_LEAD_BASE_SECONDS + extra;
   }
 
-  function ensureToast() {
+  // Toasts live in a shared "stack" container rather than one single toast
+  // element. Two hits close enough together used to fight over that single
+  // slot — whichever hit's lead window started second would silently
+  // replace the one still being shown, cutting it off mid-display. Multiple
+  // cards can now coexist and animate in/out independently.
+
+  function ensureToastStack() {
     const player = document.querySelector('.html5-video-player');
     if (!player) return null;
-    let toast = player.querySelector('.ytc-toast');
-    if (!toast) {
-      toast = document.createElement('div');
-      toast.className = 'ytc-toast';
-      toast.innerHTML =
-        '<button type="button" class="ytc-toast-close" aria-label="Dismiss">×</button>' +
-        '<div class="ytc-toast-time"></div>' +
-        '<div class="ytc-toast-comment"></div>' +
-        '<div class="ytc-toast-progress"><div class="ytc-toast-progress-fill"></div></div>';
-      player.appendChild(toast);
+    let stack = player.querySelector('.ytc-toast-stack');
+    if (!stack) {
+      stack = document.createElement('div');
+      stack.className = 'ytc-toast-stack';
+      player.appendChild(stack);
+    }
+    positionStack(stack);
+    return stack;
+  }
 
-      toast.querySelector('.ytc-toast-close').addEventListener('click', (e) => {
-        e.stopPropagation();
-        if (state.currentToastHit) state.dismissedHits.add(state.currentToastHit);
-        state.currentToastHit = null;
-        hideApproachToast();
-      });
+  function positionStack(stack) {
+    if (!stack) return;
+    stack.classList.remove(...TOAST_POSITION_CLASSES);
+    stack.classList.add('ytc-toast-pos-' + (state.settings.toastPosition || 'top-right'));
+  }
 
-      // Hovering to read shouldn't let the moment slip by or have the toast
-      // vanish mid-sentence — pause playback while the cursor is over it, and
-      // only resume on leave if we're the ones who paused it (never override
-      // a pause the user made themselves).
-      toast.addEventListener('mouseenter', () => {
-        const video = getVideo();
-        if (video && !video.paused) {
-          video.pause();
-          state.toastHoverPausedVideo = true;
-        }
-      });
-      toast.addEventListener('mouseleave', () => {
+  function createToastCard(hit) {
+    const stack = ensureToastStack();
+    if (!stack) return null;
+
+    const el = document.createElement('div');
+    el.className = 'ytc-toast';
+    el.innerHTML =
+      '<button type="button" class="ytc-toast-close" aria-label="Dismiss">×</button>' +
+      '<div class="ytc-toast-time"></div>' +
+      '<div class="ytc-toast-comment"></div>' +
+      '<div class="ytc-toast-progress"><div class="ytc-toast-progress-fill"></div></div>';
+
+    el.querySelector('.ytc-toast-time').textContent = `Coming up: ${formatTime(hit.seconds)}`;
+    const commentEl = el.querySelector('.ytc-toast-comment');
+    commentEl.textContent = hit.samples[0] || '';
+    commentEl.style.display = hit.samples[0] ? '' : 'none';
+    el.querySelector('.ytc-toast-progress-fill').style.width = '100%';
+
+    el.querySelector('.ytc-toast-close').addEventListener('click', (e) => {
+      e.stopPropagation();
+      state.dismissedHits.add(hit);
+      removeToastCard(hit);
+    });
+
+    // Hovering to read shouldn't let the moment slip by or have the card
+    // vanish mid-sentence — pause playback while the cursor is over any
+    // card, and only resume on leave if we're the ones who paused it (never
+    // override a pause the user made themselves). A count rather than a
+    // single flag, since the pointer can move directly between two stacked
+    // cards without a gap in "something is hovered."
+    el.addEventListener('mouseenter', () => {
+      state.toastHoverCount++;
+      const video = getVideo();
+      if (video && !video.paused && state.toastHoverCount === 1) {
+        video.pause();
+        state.toastHoverPausedVideo = true;
+      }
+    });
+    el.addEventListener('mouseleave', () => {
+      state.toastHoverCount = Math.max(0, state.toastHoverCount - 1);
+      if (state.toastHoverCount === 0) {
         const video = getVideo();
         if (video && state.toastHoverPausedVideo) video.play();
         state.toastHoverPausedVideo = false;
-      });
-    }
-    return toast;
+      }
+    });
+
+    stack.appendChild(el);
+    // Force reflow so the entrance transition actually plays instead of the
+    // opacity/transform starting already in their end state.
+    void el.offsetWidth;
+    el.classList.add('ytc-toast-visible');
+
+    return el;
   }
 
-  function positionToast() {
-    const toast = document.querySelector('.ytc-toast');
-    if (!toast) return;
-    toast.classList.remove(...TOAST_POSITION_CLASSES);
-    toast.classList.add('ytc-toast-pos-' + (state.settings.toastPosition || 'top-right'));
-  }
-
-  function showApproachToast(hit) {
-    const toast = ensureToast();
-    if (!toast) return;
-
-    positionToast();
-    toast.querySelector('.ytc-toast-time').textContent = `Coming up: ${formatTime(hit.seconds)}`;
-    const commentEl = toast.querySelector('.ytc-toast-comment');
-    commentEl.textContent = hit.samples[0] || '';
-    commentEl.style.display = hit.samples[0] ? '' : 'none';
-    toast.querySelector('.ytc-toast-progress-fill').style.width = '100%';
-
-    // Force reflow so re-triggering restarts the fade-in transition instead
-    // of being a no-op if the toast is already mid-transition.
-    toast.classList.remove('ytc-toast-visible');
-    void toast.offsetWidth;
-    toast.classList.add('ytc-toast-visible');
-  }
-
-  function hideApproachToast() {
-    const toast = document.querySelector('.ytc-toast');
-    if (toast) toast.classList.remove('ytc-toast-visible');
-  }
-
-  function updateToastProgress(fraction) {
-    const fill = document.querySelector('.ytc-toast-progress-fill');
-    if (fill) fill.style.width = Math.max(0, Math.min(1, fraction)) * 100 + '%';
+  function removeToastCard(hit) {
+    const el = state.activeToastHits.get(hit);
+    if (el) el.remove();
+    state.activeToastHits.delete(hit);
   }
 
   // --- sound --------------------------------------------------------
@@ -486,28 +498,39 @@
     if (!video || !state.duration) return;
     const t = video.currentTime;
 
-    let active = null;
+    const nowActive = new Set();
     for (const hit of state.hits.values()) {
       if (hit.seconds > state.duration) continue;
+      if (state.dismissedHits.has(hit)) continue;
       const leadStart = hit.seconds - leadSecondsFor(hit);
-      if (t >= leadStart && t < hit.seconds) {
-        active = hit;
-        break;
+      if (t >= leadStart && t < hit.seconds) nowActive.add(hit);
+    }
+
+    // Sound fires once per hit's approach regardless of whether the toast
+    // visual is enabled — the two settings are independent.
+    for (const hit of nowActive) {
+      if (!state.toastedHits.has(hit)) {
+        state.toastedHits.add(hit);
+        if (state.settings.sound) playSound();
       }
     }
 
-    if (active && !state.dismissedHits.has(active)) {
-      if (state.currentToastHit !== active) {
-        state.currentToastHit = active;
-        if (!state.toastedHits.has(active)) {
-          state.toastedHits.add(active);
-          if (state.settings.sound) playSound();
-        }
-        if (state.settings.toast) showApproachToast(active);
+    if (state.settings.toast) {
+      // Drop cards for hits that fell out of their window.
+      for (const hit of [...state.activeToastHits.keys()]) {
+        if (!nowActive.has(hit)) removeToastCard(hit);
       }
-    } else if (state.currentToastHit) {
-      state.currentToastHit = null;
-      hideApproachToast();
+      // Add cards for hits that just entered theirs, earliest first, so if
+      // several start on the same tick they stack in a sensible order.
+      const newcomers = [...nowActive]
+        .filter((hit) => !state.activeToastHits.has(hit))
+        .sort((a, b) => a.seconds - b.seconds);
+      for (const hit of newcomers) {
+        const el = createToastCard(hit);
+        if (el) state.activeToastHits.set(hit, el);
+      }
+    } else if (state.activeToastHits.size) {
+      for (const hit of [...state.activeToastHits.keys()]) removeToastCard(hit);
     }
 
     // Allow a hit to fire (and be dismissible) again if the user rewinds
@@ -521,12 +544,16 @@
   }
 
   function tickToastProgress() {
-    if (state.currentToastHit && state.settings.toast) {
+    if (state.settings.toast && state.activeToastHits.size) {
       const video = getVideo();
       if (video) {
-        const hit = state.currentToastHit;
-        const leadStart = hit.seconds - leadSecondsFor(hit);
-        updateToastProgress((hit.seconds - video.currentTime) / (hit.seconds - leadStart));
+        const t = video.currentTime;
+        for (const [hit, el] of state.activeToastHits) {
+          const leadStart = hit.seconds - leadSecondsFor(hit);
+          const fraction = (hit.seconds - t) / (hit.seconds - leadStart);
+          const fill = el.querySelector('.ytc-toast-progress-fill');
+          if (fill) fill.style.width = Math.max(0, Math.min(1, fraction)) * 100 + '%';
+        }
       }
     }
     requestAnimationFrame(tickToastProgress);
@@ -568,14 +595,15 @@
 
   function reset() {
     document.querySelectorAll('.ytc-timestamp-marker').forEach((el) => el.remove());
-    document.querySelectorAll('.ytc-toast').forEach((el) => el.remove());
+    document.querySelectorAll('.ytc-toast-stack').forEach((el) => el.remove());
     state.observer?.disconnect();
     state.observer = null;
     state.hits.clear();
     state.seenLinks = new WeakSet();
     state.toastedHits = new Set();
     state.dismissedHits = new Set();
-    state.currentToastHit = null;
+    state.activeToastHits = new Map();
+    state.toastHoverCount = 0;
     state.toastHoverPausedVideo = false;
     state.duration = 0;
     state.videoId = getVideoId();
