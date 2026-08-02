@@ -1,7 +1,7 @@
 # YouTube Comment Timestamp Chapters
 
 A Chrome extension that finds timestamps mentioned in YouTube comments (like
-`4:48 "That's usefull, actually!"`) and marks them on the video's progress bar — like
+`9:19 the way he said zombie`) and marks them on the video's progress bar — like
 chapters, but crowdsourced from the comments section.
 
 Not published on the Chrome Web Store — load it manually, it takes under a
